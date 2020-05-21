@@ -1,15 +1,56 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
 
-import { throwError } from 'rxjs';
+import { throwError, of } from "rxjs";
+import {
+  tap,
+  concatMap,
+  mergeMap,
+  switchMap,
+  shareReplay,
+  catchError,
+} from "rxjs/operators";
+
+import { Supplier } from "./supplier";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class SupplierService {
-  suppliersUrl = 'api/suppliers';
+  suppliersUrl = "api/suppliers";
 
-  constructor(private http: HttpClient) { }
+  suppliers$ = this.http.get<Supplier[]>(this.suppliersUrl).pipe(
+    tap((data) => console.log("suppliers", JSON.stringify(data))),
+    shareReplay(1),
+    catchError(this.handleError)
+  );
+
+  suppliersWithConcatMap$ = of(1, 5, 8).pipe(
+    tap((id) => console.log("Concat Map source Observable ", id)),
+    concatMap((id) => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`))
+  );
+
+  suppliersWithMergeMap$ = of(1, 5, 8).pipe(
+    tap((id) => console.log("Merge Map source Observable ", id)),
+    mergeMap((id) => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`))
+  );
+
+  suppliersWithSwitchMap$ = of(1, 5, 8).pipe(
+    tap((id) => console.log("Switch Map source Observable ", id)),
+    switchMap((id) => this.http.get<Supplier>(`${this.suppliersUrl}/${id}`))
+  );
+
+  constructor(private http: HttpClient) {
+    // this.suppliersWithConcatMap$.subscribe((item) =>
+    //   console.log("concatMap Result", item)
+    // );
+    // this.suppliersWithMergeMap$.subscribe((item) =>
+    //   console.log("mergeMap Result", item)
+    // );
+    // this.suppliersWithSwitchMap$.subscribe((item) =>
+    //   console.log("switchMap Result", item)
+    // );
+  }
 
   private handleError(err: any) {
     // in a real world app, we may send the server to some remote logging infrastructure
@@ -26,5 +67,4 @@ export class SupplierService {
     console.error(err);
     return throwError(errorMessage);
   }
-
 }
